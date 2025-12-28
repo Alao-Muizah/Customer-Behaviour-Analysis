@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -13,14 +14,12 @@ st.set_page_config(
 
 st.title("Customer Behavioral Change Analysis")
 st.markdown("""
-Upload a customer-level dataset (Excel) and this app will automatically:
-- Select numeric features
-- Determine the optimal number of clusters using **Silhouette Analysis**
-- Perform **K-Means clustering**
-- Generate cluster-level summaries and visual insights
+This application performs **unsupervised customer segmentation**.
+It automatically determines the optimal number of clusters using
+**Silhouette Analysis**, then applies **K-Means clustering**.
 """)
 
-# -------------------- FILE UPLOAD (SAFE) --------------------
+# -------------------- FILE UPLOAD --------------------
 uploaded_file = st.file_uploader(
     "Upload an Excel file (.xlsx)",
     type=["xlsx"]
@@ -70,7 +69,30 @@ if len(features) < 2:
     st.warning("Please select at least two numeric features.")
     st.stop()
 
-X = df[features]
+# -------------------- DATA CLEANING --------------------
+X = df[features].copy()
+
+# Replace infinite values
+X.replace([np.inf, -np.inf], np.nan, inplace=True)
+
+rows_before = len(X)
+
+# Drop rows with missing values
+X.dropna(inplace=True)
+
+rows_after = len(X)
+
+# Align original dataframe with cleaned data
+df = df.loc[X.index].copy()
+
+if rows_after < 2:
+    st.error("Not enough valid rows after cleaning to perform clustering.")
+    st.stop()
+
+if rows_before != rows_after:
+    st.warning(
+        f"{rows_before - rows_after} rows were removed due to missing or invalid values."
+    )
 
 # -------------------- SCALING --------------------
 scaler = StandardScaler()
@@ -79,7 +101,7 @@ X_scaled = scaler.fit_transform(X)
 # -------------------- SILHOUETTE ANALYSIS --------------------
 st.subheader("Silhouette Analysis")
 
-max_k = min(10, len(df) - 1)
+max_k = min(10, len(X) - 1)
 k_range = range(2, max_k + 1)
 
 silhouette_scores = []
@@ -144,7 +166,7 @@ ax2.set_ylabel(metric.replace("_", " ").title())
 ax2.set_title(f"{metric.replace('_', ' ').title()} by Cluster")
 st.pyplot(fig2)
 
-# -------------------- DOWNLOAD --------------------
+# -------------------- DOWNLOAD RESULTS --------------------
 st.subheader("Download Results")
 
 csv = df.to_csv(index=False).encode("utf-8")
