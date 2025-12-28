@@ -6,6 +6,9 @@ Analyzed customer behaviour changes over time using transactional data. Instead 
 
 Understanding how spending patterns evolve helps businesses identify high-value, at-risk, or growing customers. Static clustering often misses these behavioural shifts.
 
+# Dataset Used 
+link : https://archive.ics.uci.edu/dataset/502/online+retail+ii
+
 # Tools
 Python, Pandas, NumPy, Scikit-learn, Matplotlib, Seaborn
 
